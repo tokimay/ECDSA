@@ -12,8 +12,6 @@ def sign(message: str, privateKey: str) -> tuple[int, int]:
     # r = rx
     r = secp256k1.multipy(repeat=k, point=secp256k1.g())
     r = r[0] % secp256k1.n()
-    if r == 0:
-        return sign(message, privateKey)
     kInv = pow(k, -1, secp256k1.n())
     s = kInv * (h + r * p) % secp256k1.n()
     return r, s
