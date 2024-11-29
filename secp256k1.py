@@ -1,23 +1,15 @@
-# secp256k1
-___a = 0
-___b = 7
-# p hex = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F
-___mod = 115792089237316195423570985008687907853269984665640564039457584007908834671663
-# x hex = 0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798
-# y hex = 0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8
-___base = (55066263022277343669578718895168534326250603453777594175500187360389116729240,
-           32670510020758816978083085130507043184471273380659243275938904335757337482424)
-# n hex = 0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141
-___n = 115792089237316195423570985008687907852837564279074904382605163141518161494337
+
+__A = 0
+__B = 7
+__P = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F
+__G = (0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798,
+       0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8)
+__N = 0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141
 
 
-def ___is_equal_to(pointA: tuple, pointB: tuple):
-    return pointA[0] == pointB[0] and pointA[1] == pointB[1]
-
-
-def ___isOnCurve(point: tuple) -> bool:
+def __is_on_curve(point: tuple[int, int]) -> bool:
     # if y ** 2 mod p = x **3 + ax + b mod p
-    if (point[1] ** 2) % ___mod == ((point[0] ** 3) + (___a * point[0]) + ___b) % ___mod:
+    if (point[1] ** 2) % __P == ((point[0] ** 3) + (__A * point[0]) + __B) % __P:
         return True
     else:
         print('Point:')
@@ -26,45 +18,45 @@ def ___isOnCurve(point: tuple) -> bool:
         return False
 
 
-def ___get_inverse(n):
-    return pow(n, -1, ___mod)
+def __get_inverse(_n):
+    return pow(_n, -1, __P)
 
 
-def ___getPointsInverse(_p: tuple) -> tuple:
-    _y = (_p[1] * -1) % ___mod
+def __get_points_inverse(_p: tuple[int, int]) -> tuple[int, int]:
+    _y = (_p[1] * -1) % __P
     p_1 = (_p[0], _y)
     return p_1
 
 
-def ___add(pointA: tuple, pointB: tuple) -> tuple:
-    if ___is_equal_to(pointA, pointB):  # is multiple
+def __add(point_a: tuple[int, int], point_b: tuple[int, int]) -> tuple[int, int]:
+    if __is_equal_to(point_a, point_b):  # is multiple
         # a = 0
-        slope = ((3 * pointA[0] ** 2) + ___a) * ___get_inverse(n=(2 * pointA[1])) % ___mod
+        slope = ((3 * point_a[0] ** 2) + __A) * __get_inverse(_n=(2 * point_a[1])) % __P
     else:  # A is base B is poit
-        slope = (pointB[1] - pointA[1]) * ___get_inverse(n=pointB[0] - pointA[0]) % ___mod
+        slope = (point_b[1] - point_a[1]) * __get_inverse(_n=point_b[0] - point_a[0]) % __P
 
-    x = (slope ** 2 - pointA[0] - pointB[0]) % ___mod
-    y = (slope * (pointA[0] - x) - pointA[1]) % ___mod
-    newPoint = (x, y)
+    x = (slope ** 2 - point_a[0] - point_b[0]) % __P
+    y = (slope * (point_a[0] - x) - point_a[1]) % __P
+    new_point = (x, y)
 
-    return newPoint  # Point(x, y)
+    return new_point  # Point(x, y)
 
 
-def __multiply(pointA: tuple, base: tuple, repeat: int) -> tuple:
-    point = ___add(pointA, base)
+def __multiply(point_a: tuple[int, int], base: tuple[int, int], repeat: int) -> tuple[int, int]:
+    point = __add(point_a, base)
     for i in range(repeat - 2):
-        point = ___add(point, base)
+        point = __add(point, base)
     return point
 
 
-def ___scalar_multiply(point: tuple, repeat: int) -> tuple:
+def __scalar_multiply(point: tuple[int, int], repeat: int) -> tuple[int, int]:
     point_double = point
     offset = 1
     previous_points = []
     while offset < repeat:
         previous_points.append((offset, point_double))
         if 2 * offset <= repeat:
-            point_double = ___add(point_double, point_double)
+            point_double = __add(point_double, point_double)
             offset = 2 * offset
         else:
             next_offset = 1
@@ -74,35 +66,187 @@ def ___scalar_multiply(point: tuple, repeat: int) -> tuple:
                     if previous_point[0] != point_double[0]:
                         next_offset = previous_offset
                         next_point = previous_point
-            point_double = ___add(point_double, next_point)
+            point_double = __add(point_double, next_point)
             offset = offset + next_offset
 
     return point_double
 
 
-def getPublicKeyCoordinate(privateKey: int) -> tuple:
-    pk = ___scalar_multiply(point=___base, repeat=privateKey)
-    if ___isOnCurve(___base) and ___isOnCurve(pk):
-        return pk
+def __is_equal_to(point_a: tuple[int, int], point_b: tuple[int, int]):
+    return point_a[0] == point_b[0] and point_a[1] == point_b[1]
+
+
+def normalize(hex_val: str or int) -> int:
+    if isinstance(hex_val, str):
+        try:
+            int_val = int(hex_val, 16)
+            return int_val
+        except TypeError:
+            raise TypeError
+    elif isinstance(hex_val, int):
+        return hex_val
     else:
-        return ()
+        raise TypeError
 
 
-def multipy(repeat: int, point: tuple) -> tuple:
-    pk = ___scalar_multiply(point=point, repeat=repeat)
-    if ___isOnCurve(___base) and ___isOnCurve(pk):
-        return pk
+def __uncompressed(pub_key_coordinate: tuple[int, int]) -> str:
+    x = hex(pub_key_coordinate[0])[2:]
+    y = hex(pub_key_coordinate[1])[2:]
+    uc_pk = '04' + x + y
+    if len(uc_pk) != (65 * 2):
+        print('Public key length is not math bitcoin standards.')
+    return uc_pk
+
+
+def __compressed(pub_key_coordinate: tuple[int, int]) -> str:
+    x = hex(pub_key_coordinate[0])[2:]
+    if pub_key_coordinate[1] % 2 == 0:
+        y = '02'
     else:
-        return ()
+        y = '03'
+    uc_pk = y + x
+    if len(uc_pk) != (33 * 2):
+        print('Public key length is not math bitcoin standards.')
+    return uc_pk
+
+def __legendre(a, p):
+    return pow(a, (p - 1) // 2, p)
+
+def __tonelli(y2_modular):
+    assert __legendre(y2_modular, __P) == 1, "not a square (mod p)"
+    q = __P - 1
+    s = 0
+    while q % 2 == 0:
+        q //= 2
+        s += 1
+    if s == 1:
+        return pow(y2_modular, (__P + 1) // 4, __P)
+    for z in range(2, __P):
+        if __P - 1 == __legendre(z, __P):
+            break
+    c = pow(z, q, __P)
+    r = pow(y2_modular, (q + 1) // 2, __P)
+    t = pow(y2_modular, q, __P)
+    m = s
+    # t2 = 0
+    while (t - 1) % __P != 0:
+        t2 = (t * t) % __P
+        for i in range(1, m):
+            if (t2 - 1) % __P == 0:
+                break
+            t2 = (t2 * t2) % __P
+        b = pow(c, 1 << (m - i - 1), __P)
+        r = (r * b) % __P
+        c = (b * b) % __P
+        t = (t * c) % __P
+        m = i
+    return r
+
+def __get_y(x: int):
+    y2_modular = ((x ** 3) + 7) % __P
+    y = __tonelli(y2_modular)
+    return y
+
+def recover_public_key_coordinate(pub_key: str or int) -> tuple[int, int]:
+    if isinstance(pub_key, str):
+        pub_key = pub_key[2:] # remove prefix '02' or '03' or '04
+    elif isinstance(pub_key, int):
+        pub_key = hex(pub_key)[3:] # remove '0x' and prefix '2' or '3' or '4'
+    else:
+        raise ValueError
+
+    pub_key = hex(normalize(pub_key))[2:]
+    x = None
+    y = None
+    if len(pub_key) == (32 * 2): # compressed
+        x = int(pub_key, 16)
+        y = __get_y(x)
+    elif len(pub_key) == (64 * 2): # uncompressed
+        x = int(pub_key[:64], 16)
+        y = int(pub_key[64:], 16)
+    else:
+        print('public key length is not math bitcoin standards.')
+    return x, y
+
+def de_compressed(compressed_pk: str or int) -> str:
+    if isinstance(compressed_pk, str):
+        compressed_pk = compressed_pk[2:] # remove prefix '02' or '03'
+    elif isinstance(compressed_pk, int):
+        compressed_pk = hex(compressed_pk)[3:] # remove '0x' and prefix '2' or '3'
+    else:
+        raise ValueError
+    if len(compressed_pk) != (32 * 2):
+        print('Compressed public key length is not math bitcoin standards.')
+
+    x = normalize(compressed_pk)
+    y = __get_y(x)
+    uc_pk = '04' + hex(x)[2:] + hex(y)[2:]
+    if len(uc_pk) != (65 * 2):
+        print('Uncompressed public key length is not math bitcoin standards.')
+    return uc_pk
 
 
-def add(pointA: tuple, pointB: tuple) -> tuple:
-    return ___add(pointA, pointB)
+def public_key_coordinate(private_key: str or int) -> tuple[int, int] or None:
+    try:
+        private_key = normalize(private_key)
+        if len(hex(private_key)[2:]) != 32 * 2:
+            print('Private key length is not math bitcoin standards.')
+        pk = __scalar_multiply(point=__G, repeat=private_key)
+        if not __is_on_curve(pk):
+            raise ValueError
+        return pk
+    except Exception as er:
+        print(str(er))
+        return None
+
+
+def uncompressed_public_key(private_key: str or int) -> str or None:
+    try:
+        private_key = normalize(private_key)
+        if len(hex(private_key)[2:]) != 32 * 2:
+            print('Private key length is not math bitcoin standards.')
+        pk = __scalar_multiply(point=__G, repeat=private_key)
+        if not __is_on_curve(pk):
+            raise ValueError
+        return __uncompressed(pk)
+    except Exception as er:
+        print(str(er))
+        return None
+
+
+def compressed_public_key(private_key: str or int) -> str or None:
+    try:
+        private_key = normalize(private_key)
+        if len(hex(private_key)[2:]) != 32 * 2:
+            print('Private key length is not math bitcoin standards.')
+        pk = __scalar_multiply(point=__G, repeat=private_key)
+        if not __is_on_curve(pk):
+            raise ValueError
+        return __compressed(pk)
+    except Exception as er:
+        print(str(er))
+        return None
+
+
+def multipy(repeat: int, point: tuple[int, int]) -> tuple[int, int] or None:
+    try:
+        pk = __scalar_multiply(point=point, repeat=repeat)
+        if __is_on_curve(pk):
+            return pk
+        else:
+            raise ValueError
+    except Exception as er:
+        print(str(er))
+        return None
+
+
+def add(point_a: tuple[int, int], point_b: tuple[int, int]) -> tuple[int, int]:
+    return __add(point_a, point_b)
 
 
 def n() -> int:
-    return ___n
+    return __N
 
 
-def g() -> tuple:
-    return ___base
+def g() -> tuple[int, int]:
+    return __G
